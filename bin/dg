@@ -4,6 +4,8 @@ require File.expand_path('../../lib/docker', __FILE__)
 
 COMMANDS = %w(
   -h
+  -v
+  --version
   build
   debug
   deploy
@@ -12,6 +14,7 @@ COMMANDS = %w(
   push
   run
   test
+  version
 )
 
 if COMMANDS.include?(ARGV.first)

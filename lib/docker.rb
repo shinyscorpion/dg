@@ -80,6 +80,11 @@ class Docker
       run_tests
     end
 
+    def version
+      puts "v#{VERSION}"
+    end
+    alias_method :v, :version
+
   private
 
     def error!(e, step = "executing")
@@ -190,9 +195,11 @@ class Docker
           push      Push the image to your docker registry
           run       Run the image using your fig.yml's `web` config
           test      Run the image using your fig.yml's `test` config
+          version   Display the current dg version
       ".gsub(/^ {6}/,'')
     end
     alias_method :h, :help
   end
 
 end
+
