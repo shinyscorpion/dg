@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+require File.expand_path('../../lib/docker', __FILE__)
+
+COMMANDS = %w(
+  -h
+  build
+  debug
+  deploy
+  help
+  purge
+  push
+  run
+  test
+)
+
+if COMMANDS.include?(ARGV.first)
+  Docker.send(ARGV.first.tr('-','').to_sym)
+  exit 0
+else
+  STDERR.puts "You must supply a command (#{COMMANDS.join(', ')})"
+  exit 1
+end
