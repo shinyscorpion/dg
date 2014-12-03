@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
-require File.expand_path('../../lib/docker', __FILE__)
+$:.push File.expand_path("../../lib", __FILE__)
+require 'dg/docker'
 
 COMMANDS = %w(
   -h
@@ -18,7 +19,7 @@ COMMANDS = %w(
 )
 
 if COMMANDS.include?(ARGV.first)
-  Docker.send(ARGV.first.tr('-','').to_sym)
+  DG::Docker.send(ARGV.first.tr('-','').to_sym)
   exit 0
 else
   STDERR.puts "You must supply a command (#{COMMANDS.join(', ')})"

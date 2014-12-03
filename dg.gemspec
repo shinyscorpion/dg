@@ -1,11 +1,10 @@
 $:.push File.expand_path("../lib", __FILE__)
-
-VERSION = '0.5'
+require 'dg/version'
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
   s.name        = "dg"
-  s.version     = VERSION
+  s.version     = DG::VERSION
   s.authors     = ["Michael Malet"]
   s.email       = ["michael@nervd.com"]
   s.homepage    = "https://github.com/shinyscorpion/dg"
