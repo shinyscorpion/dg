@@ -45,30 +45,13 @@ module DG
       end
 
       def deploy_stages
-        candidates = Dir['deploy-to*']
-        if candidates.size == 1
-          script = candidates.first
-          if File.executable?(script)
-            branch = ENV['GIT_BRANCH'] ||
-              `git symbolic-ref --short -q HEAD`.strip
-            return `./#{script} #{branch}`.strip.split(',')
-          else
-            error!(
-              RuntimeError.new(
-                %(Deploy-to script: "#{script}" must be executable! (e.g. chmod +x #{script}))
-              ),
-              "determining stage to deploy to"
-            )
-          end
-        else
-          error!(
-            RuntimeError.new(
-              "There must be a deploy-to* script " +
-              "(e.g. deploy-to.{rb|sh|js}): #{candidates.size} found"
-            ),
-            "determining stage to deploy to"
-          )
-        end
+        generate_fig_yaml
+        branch = ENV['GIT_BRANCH'] ||
+          `git symbolic-ref --short -q HEAD`.strip
+
+        run_with_output(
+          "fig -f #{FIG_GEN_PATH} run deployto", capture = true
+        ).strip.split(',')
       end
 
       def run
@@ -93,18 +76,26 @@ module DG
         exit 1
       end
 
-      def run_with_output(command)
+      def run_with_output(command, capture = false)
         sudo_command = SUDO ? "sudo -E bash -c '#{command}'" : command
         puts "Running `#{sudo_command}` in #{Dir.pwd}"
-        PTY.spawn(sudo_command) do |stdin, stdout, pid|
-          stdin.each { |line| print line } rescue Errno::EIO
-          Process.wait(pid)
-        end
-        status_code = $?.exitstatus
+        if capture
+          return `#{command}`
+        else
+          begin
+            PTY.spawn(sudo_command) do |stdin, stdout, pid|
+              stdin.each { |line| print line } rescue Errno::EIO
+              Process.wait(pid)
+            end
+            status_code = $?.exitstatus
 
-        error!(RuntimeError.new("exit code was #{status_code}"), "executing #{command}") if status_code != 0
-      rescue PTY::ChildExited
-        puts "The child process exited!"
+            error!(RuntimeError.new("exit code was #{status_code}"), "executing #{command}") if status_code != 0
+
+            return status_code
+          rescue PTY::ChildExited
+            puts "The child process exited!"
+          end
+        end
       end
 
       def fig_yml
@@ -125,7 +116,7 @@ module DG
       # Add the git commit hash to the image name
       def git_image_name
         @@git_image_name ||=
-          "#{image_name}:#{ENV['GO_REVISION_BITBUCKET'] ||
+          "#{image_name}:#{ENV['GO_REVISION_#{MATERIAL_NAME}'] ||
           `git rev-parse HEAD`.strip}"
       end
 
