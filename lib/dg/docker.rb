@@ -39,19 +39,25 @@ module DG
             'triggering pipeline'
           )
         end
+
+        puts "Triggering deploys for: #{deploy_stages.inspect}"
+
         deploy_stages.each do |deploy_stage|
           schedule_pipeline(project_name, deploy_stage, git_image_name)
         end
       end
 
       def deploy_stages
-        generate_fig_yaml
-        branch = ENV['GIT_BRANCH'] ||
-          `git symbolic-ref --short -q HEAD`.strip
+        @@deploy_stages_cached ||=
+          begin
+            generate_fig_yaml
+            branch = ENV['GIT_BRANCH'] ||
+              `git symbolic-ref --short -q HEAD`.strip
 
-        run_with_output(
-          "fig -f #{FIG_GEN_PATH} run deployto", capture = true
-        ).strip.split(',')
+            run_with_output(
+              "docker run --entrypoint=/bin/sh #{git_image_name} /u/app/deploy-to.sh", capture = true
+            ).strip.split(',')
+          end
       end
 
       def run
@@ -151,7 +157,7 @@ module DG
 
       def schedule_pipeline(project_name, deploy_stage, image_id)
         pipeline_name = "docker-#{project_name}-#{deploy_stage}"
-
+        puts "Triggering pipeline: #{pipeline_name} on #{ENV['GO_HOST']}"
         uri = URI("https://#{ENV['GO_HOST']}/go/api/pipelines/#{pipeline_name}/schedule")
         request = Net::HTTP::Post.new(uri.path)
         request.basic_auth ENV['GO_USER'], ENV['GO_PWD']
