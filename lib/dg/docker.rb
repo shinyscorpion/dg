@@ -80,7 +80,7 @@ module DG
         sudo_command = SUDO ? "sudo -E bash -c '#{command}'" : command
         puts "Running `#{sudo_command}` in #{Dir.pwd}"
         if capture
-          return `#{command}`
+          return `#{sudo_command}`
         else
           begin
             PTY.spawn(sudo_command) do |stdin, stdout, pid|
