@@ -55,7 +55,7 @@ module DG
               `git symbolic-ref --short -q HEAD`.strip
 
             run_with_output(
-              "docker run --entrypoint=/bin/sh #{git_image_name} /u/app/deploy-to.sh", capture = true
+              %(docker run --entrypoint= -e GIT_BRANCH=$GIT_BRANCH #{git_image_name} /u/app/deploy-to.sh), capture = true
             ).strip.split(',')
           end
       end
@@ -86,6 +86,8 @@ module DG
         sudo_command = SUDO ? "sudo -E bash -c '#{command}'" : command
         puts "Running `#{sudo_command}` in #{Dir.pwd}"
         if capture
+          # TODO: Replace this with a combined function below, so
+          #  that non-zero exit codes are handled correctly
           return `#{sudo_command}`
         else
           begin
@@ -161,7 +163,7 @@ module DG
         uri = URI("https://#{ENV['GO_HOST']}/go/api/pipelines/#{pipeline_name}/schedule")
         request = Net::HTTP::Post.new(uri.path)
         request.basic_auth ENV['GO_USER'], ENV['GO_PWD']
-        request.set_form_data({ 'variables[IMAGE_ID]' => git_image_name.gsub('/','\/') })
+        request.set_form_data({ 'variables[IMAGE_ID]' => git_image_name })
 
         response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
