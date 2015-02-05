@@ -1,3 +1,3 @@
 module DG
-  VERSION = '0.5.16'
+  VERSION = '0.5.19'
 end

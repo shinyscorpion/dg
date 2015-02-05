@@ -5,8 +5,7 @@ require 'dg/version'
 
 module DG
   class Docker
-    MATERIAL_NAME = ENV['MATERIAL_NAME'] || 'BITBUCKET'
-    SUDO = !!ENV["GO_REVISION_#{MATERIAL_NAME}"]
+    SUDO = !!ENV['GO_PIPELINE_NAME']
     BASEPATH = Dir.pwd
 
     FIG_YML_PATH = "#{BASEPATH}/fig.yml"
@@ -55,7 +54,7 @@ module DG
               `git symbolic-ref --short -q HEAD`.strip
 
             run_with_output(
-              %(docker run --entrypoint= -e GIT_BRANCH=$GIT_BRANCH #{git_image_name} /u/app/deploy-to.sh), capture = true
+              %(docker run --entrypoint=ruby -e GIT_BRANCH=$GIT_BRANCH #{git_image_name} /u/app/deploy-to.rb), capture = true
             ).strip.split(',')
           end
       end
@@ -124,7 +123,7 @@ module DG
       # Add the git commit hash to the image name
       def git_image_name
         @@git_image_name ||=
-          "#{image_name}:#{ENV['GO_REVISION_#{MATERIAL_NAME}'] ||
+          "#{image_name}:#{ENV['GIT_COMMIT'] ||
           `git rev-parse HEAD`.strip}"
       end
 
