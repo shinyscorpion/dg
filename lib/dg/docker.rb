@@ -5,7 +5,7 @@ require 'dg/version'
 
 module DG
   class Docker
-    SUDO = !!ENV['GO_PIPELINE_NAME']
+    SUDO = !!ENV['USE_SUDO']
     BASEPATH = Dir.pwd
 
     FIG_YML_PATH = "#{BASEPATH}/fig.yml"
@@ -27,7 +27,7 @@ module DG
       end
 
       def push
-        run_with_output("docker push #{git_image_name.tr(':',' ')}")
+        run_with_output("docker push #{git_image_name}")
       end
 
       def deploy
@@ -84,24 +84,26 @@ module DG
       def run_with_output(command, capture = false)
         sudo_command = SUDO ? "sudo -E bash -c '#{command}'" : command
         puts "Running `#{sudo_command}` in #{Dir.pwd}"
-        if capture
-          # TODO: Replace this with a combined function below, so
-          #  that non-zero exit codes are handled correctly
-          return `#{sudo_command}`
-        else
-          begin
-            PTY.spawn(sudo_command) do |stdin, stdout, pid|
-              stdin.each { |line| print line } rescue Errno::EIO
-              Process.wait(pid)
-            end
-            status_code = $?.exitstatus
 
-            error!(RuntimeError.new("exit code was #{status_code}"), "executing #{command}") if status_code != 0
-
-            return status_code
-          rescue PTY::ChildExited
-            puts "The child process exited!"
+        begin
+          buffer = ''
+          PTY.spawn(sudo_command) do |stdin, stdout, pid|
+            callback = capture ?
+              ->(line) {
+                print line
+                buffer << line
+              } :
+              ->(line) { print line }
+            stdin.each(&callback) rescue Errno::EIO
+            Process.wait(pid)
           end
+          status_code = $?.exitstatus
+
+          error!(RuntimeError.new("exit code was #{status_code}"), "executing #{command}") if status_code != 0
+
+          return capture ? buffer : status_code
+        rescue PTY::ChildExited
+          puts "The child process exited!"
         end
       end
 
