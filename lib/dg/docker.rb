@@ -145,7 +145,7 @@ module DG
       end
 
       def run_tests
-        run_with_output("fig -f #{FIG_GEN_PATH} run test")
+        run_with_output("fig -f #{FIG_GEN_PATH} run --rm test")
       rescue => e
         error!(e, "running tests")
       end
