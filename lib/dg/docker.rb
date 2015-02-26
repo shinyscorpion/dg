@@ -2,6 +2,7 @@ require 'pty'
 require 'uri'
 require 'net/http'
 require 'fileutils'
+require 'time'
 require 'dg/version'
 
 module DG
