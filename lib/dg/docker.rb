@@ -191,7 +191,7 @@ module DG
 
         Commands:
             build     Build an image based on your fig.yml (tags with the project's Git commit hash)
-            debug     Debug a previously built image (!) THIS MUST BE RUN IN A SUBSHELL: `$(dim debug)`
+            debug     Debug a previously built image (!) THIS MUST BE RUN IN A SUBSHELL: `$(dg debug)`
             deploy    Trigger the GoCD pipeline for this project
             help      Display this help text
             purge     Remove ALL docker containers and images (not just for this project!)
