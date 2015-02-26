@@ -1,6 +1,7 @@
 require 'pty'
 require 'uri'
 require 'net/http'
+require 'fileutils'
 require 'dg/version'
 
 module DG
@@ -10,10 +11,17 @@ module DG
 
     FIG_YML_PATH = "#{BASEPATH}/fig.yml"
     FIG_GEN_PATH = "#{BASEPATH}/fig_gen.yml"
+    CACHE_FILES = %w(
+      bower.json
+      Gemfile
+      Gemfile.lock
+      package.json
+    )
 
     class << self
 
       def build
+        reset_mtimes
         build_docker_image_with_tag
       end
 
@@ -81,16 +89,16 @@ module DG
         exit 1
       end
 
-      def run_with_output(command, capture = false)
+      def run_with_output(command, capture = false, return_hash = false)
         sudo_command = SUDO ? "sudo -E bash -c '#{command}'" : command
-        puts "Running `#{sudo_command}` in #{Dir.pwd}"
+        puts "Running `#{sudo_command}` #{return_hash ? '(quietly)' : ''} in #{Dir.pwd}"
 
         begin
           buffer = ''
           PTY.spawn(sudo_command) do |stdin, stdout, pid|
             callback = capture ?
               ->(line) {
-                print line
+                print line unless return_hash
                 buffer << line
               } :
               ->(line) { print line }
@@ -99,8 +107,12 @@ module DG
           end
           status_code = $?.exitstatus
 
-          error!(RuntimeError.new("exit code was #{status_code}"), "executing #{command}") if status_code != 0
+          error!(
+            RuntimeError.new("exit code was #{status_code}"),
+            "executing #{command}"
+          ) if !return_hash && status_code != 0
 
+          return { stdout: buffer, status_code: status_code } if return_hash
           return capture ? buffer : status_code
         rescue PTY::ChildExited
           puts "The child process exited!"
@@ -136,6 +148,31 @@ module DG
         )
       rescue => e
         error!(e, "generating new fig.yml")
+      end
+
+      def reset_mtimes
+        CACHE_FILES.each do |file|
+          next unless File.exist?(file)
+          revision = run_with_output(
+            %(git rev-list -n 1 HEAD '#{file}'),
+            capture = true,
+            return_hash = true
+          )
+          if revision[:status_code] == 0
+            # File exists, find out its last modified time from git
+            # FileUtils.touch('example.txt', mtime: Time.now)
+            time = Time.parse(
+              run_with_output(
+                %(git show --pretty=format:%ai --abbrev-commit #{
+                revision[:stdout].strip} | head -n 1),
+                capture = true,
+                return_hash = true
+              )[:stdout].strip
+            )
+            FileUtils.touch(file, mtime: time)
+            puts "Setting mtime for #{file} to #{time}"
+          end
+        end
       end
 
       def build_docker_image_with_tag
