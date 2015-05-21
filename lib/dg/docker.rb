@@ -97,7 +97,7 @@ module DG
         begin
           buffer = ''
           PTY.spawn(sudo_command) do |stdin, stdout, pid|
-            callback = capture ?
+            callback = (capture || return_hash) ?
               ->(line) {
                 print line unless return_hash
                 buffer << line
