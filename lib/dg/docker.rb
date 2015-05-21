@@ -85,6 +85,12 @@ module DG
 
     private
 
+      def fig_binary
+        @@fig_binary_cached ||= %w(docker-compose fig).detect do |binary|
+          run_with_output(%(which #{binary}), false, return_hash = true)[:status_code] == 0
+        end
+      end
+
       def error!(e, step = "executing")
         STDERR.puts "An error occurred while #{step}: #{e.message}"
         exit 1
@@ -183,13 +189,13 @@ module DG
       end
 
       def run_tests
-        run_with_output("fig -f #{FIG_GEN_PATH} run --rm test")
+        run_with_output("#{fig_binary} -f #{FIG_GEN_PATH} run --rm test")
       rescue => e
         error!(e, "running tests")
       end
 
       def run_app
-        run_with_output("fig -f #{FIG_GEN_PATH} up -d web")
+        run_with_output("#{fig_binary} -f #{FIG_GEN_PATH} up -d web")
       end
 
       def debug_app
