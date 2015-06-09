@@ -37,6 +37,7 @@ module DG
 
       def push
         run_with_output("docker push #{git_image_name}")
+        run_with_output("docker push #{latest_image_name}")
       end
 
       def deploy
@@ -148,6 +149,10 @@ module DG
           `git rev-parse HEAD`.strip}"
       end
 
+      def latest_image_name
+        "#{image_name}:latest"
+      end
+
       def generate_fig_yaml
         File.write(
           FIG_GEN_PATH,
@@ -184,6 +189,7 @@ module DG
 
       def build_docker_image_with_tag
         run_with_output("docker build -t #{git_image_name} #{BASEPATH}")
+        run_with_output("docker tag #{git_image_name} #{latest_image_name}")
       rescue => e
         error!(e, "building docker image")
       end
