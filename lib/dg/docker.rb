@@ -103,14 +103,14 @@ module DG
 
         begin
           buffer = ''
-          PTY.spawn(sudo_command) do |stdin, stdout, pid|
+          PTY.spawn(sudo_command) do |stdout, stdin, pid|
             callback = (capture || return_hash) ?
-              ->(line) {
-                print line unless return_hash
-                buffer << line
+              ->(char) {
+                print char unless return_hash
+                buffer << char
               } :
-              ->(line) { print line }
-            stdin.each(&callback) rescue Errno::EIO
+              ->(char) { print char }
+            stdout.each_char(&callback) rescue Errno::EIO
             Process.wait(pid)
           end
           status_code = $?.exitstatus
