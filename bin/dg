@@ -10,6 +10,7 @@ COMMANDS = %w(
   build
   debug
   deploy
+  deploy_check
   help
   purge
   push

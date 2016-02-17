@@ -39,6 +39,18 @@ module DG
         run_with_output("docker push #{git_image_name}")
         run_with_output("docker push #{latest_image_name}")
       end
+      
+      def deploy_check
+        required_envs = %w(GO_HOST GO_USER GO_PWD)
+        unless required_envs.reduce{ |acc, e| acc && ENV[e] }
+          error!(
+            RuntimeError.new("Environment variables {#{required_envs.join(', ')}} must be set"),
+            'triggering pipeline'
+          )
+        end
+	puts "Checking pipeline docker-#{project_name}-#{deploy_stage}"
+        pipeline_check(project_name, deploy_stage)
+      end
 
       def deploy
         required_envs = %w(GO_HOST GO_USER GO_PWD)
@@ -207,6 +219,30 @@ module DG
       def debug_app
         puts "docker run -it --entrypoint=/bin/bash #{git_image_name}"
       end
+      
+      def pipeline_check(project_name, deploy_stage)
+        pipeline_name = "docker-#{project_name}-#{deploy_stage}"
+        uri = URI("https://#{ENV['GO_HOST']}/go/api/pipelines/#{pipeline_name}/status")
+        request = Net::HTTP::Get.new(uri.path)
+        request.basic_auth ENV['GO_USER'], ENV['GO_PWD']
+      
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          http.ssl_version = :SSLv3
+          http.request(request)
+        end
+      
+        if response.code.to_i == 200
+          puts "pipeline docker-#{project_name}-#{deploy_stage} Exist"
+        else
+          error!(
+            RuntimeError.new(
+              "response code was #{response.code}: #{response.body.strip}"
+            ),
+            "checking pipeline status"
+          )
+        end
+      end  
 
       def schedule_pipeline(project_name, deploy_stage, image_id)
         pipeline_name = "docker-#{project_name}-#{deploy_stage}"
