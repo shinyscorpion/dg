@@ -45,12 +45,15 @@ module DG
         unless required_envs.reduce{ |acc, e| acc && ENV[e] }
           error!(
             RuntimeError.new("Environment variables {#{required_envs.join(', ')}} must be set"),
-            'triggering pipeline'
+            'checking if pipeline exists'
           )
         end
-	puts "Checking pipeline docker-#{project_name}-#{deploy_stage}"
-        pipeline_check(project_name, deploy_stage)
 
+        puts "Checking existance of pipeline docker-#{project_name}-{#{deploy_stages.join('|')}}"
+
+        deploy_stages.each do |deploy_stage|
+          pipeline_check(project_name, deploy_stage)
+        end
       end
 
       def deploy
@@ -234,13 +237,13 @@ module DG
         end
 
         if response.code.to_i == 200
-          puts "pipeline docker-#{project_name}-#{deploy_stage} Exist"
+          puts "Pipeline [#{pipeline_name}] exists"
         else
           error!(
             RuntimeError.new(
               "response code was #{response.code}: #{response.body.strip}"
             ),
-            "checking pipeline status"
+            "checking pipeline status for [#{pipeline_name}]"
           )
         end
       end
