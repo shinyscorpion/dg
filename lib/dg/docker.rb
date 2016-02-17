@@ -77,7 +77,7 @@ module DG
               `git symbolic-ref --short -q HEAD`.strip
 
             run_with_output(
-              %(docker run --entrypoint=ruby -e GIT_BRANCH=$GIT_BRANCH #{git_image_name} /u/app/deploy-to.rb), capture = true
+              %(docker run --entrypoint=ruby -e GIT_BRANCH=#{branch} #{git_image_name} /u/app/deploy-to.rb), capture = true
             ).strip.split(',')
           end
       end
