@@ -205,7 +205,7 @@ module DG
 
       def build_docker_image_with_tag
         run_with_output("docker build -t #{git_image_name} #{BASEPATH}")
-        run_with_output("docker tag -f #{git_image_name} #{latest_image_name}")
+        run_with_output("docker tag #{git_image_name} #{latest_image_name}")
       rescue => e
         error!(e, "building docker image")
       end
